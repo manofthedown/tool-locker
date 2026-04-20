@@ -4,7 +4,7 @@ A fully offline, barcode-driven smart tool locker running on a Raspberry Pi. Hea
 
 ## Status
 
-Pre-alpha. **Phase 0 complete** — repo scaffolded, tooling wired, CI green. See [`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md) for the full plan.
+Pre-alpha. **Phase 1 complete** — single-file browser prototype working. See [`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md) for the full plan.
 
 ![CI](https://github.com/manofthedown/tool-locker/actions/workflows/ci.yml/badge.svg)
 
@@ -71,7 +71,14 @@ See `make help` for all targets.
 
 ### Phase 1 — virtual prototype (no hardware, no backend)
 
-Open `prototype/index.html` in any browser. Single-file demo using `localStorage` to prove the concept.
+Open `prototype/index.html` in any browser — just double-click the file, no server required. Single-file demo using `localStorage` to prove the concept.
+
+If your browser restricts features on `file://` URLs, serve it locally instead:
+
+```bash
+python3 -m http.server --directory prototype 8000
+# then open http://127.0.0.1:8000/
+```
 
 ### Phase 2+ — backend (local dev on laptop)
 
@@ -92,7 +99,7 @@ See [`DEPLOY.md`](./DEPLOY.md) (to be written in Phase 7) and Appendix E of `DEV
 | Phase | Goal                                         | Status  |
 |------:|----------------------------------------------|---------|
 |     0 | Setup, learning, empty repo + CI             | **done** |
-|     1 | Single-file HTML virtual prototype           | pending |
+|     1 | Single-file HTML virtual prototype           | **done** |
 |     2 | FastAPI + SQLite backend (no hardware)       | pending |
 |     3 | USB barcode scanner integration (evdev)      | pending |
 |     4 | OLED + RGB LED + buzzer feedback hardware    | pending |

@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tool Locker — Virtual Prototype</title>
+  <style>
+    :root {
+      --fg: #222;
+      --muted: #666;
+      --bg: #fff;
+      --accent: #0366d6;
+      --avail: #067d17;
+      --loaned: #a40000;
+      --border: #e1e4e8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      max-width: 760px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      color: var(--fg);
+      background: var(--bg);
+      line-height: 1.45;
+    }
+    h1 { margin-top: 0; }
+    h2 { margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+    .subtitle { color: var(--muted); margin-top: -.5rem; }
+    form#addForm { display: flex; gap: .5rem; margin: 1rem 0; }
+    form#addForm input { flex: 1; }
+    .controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; }
+    .controls label { display: inline-flex; gap: .4rem; align-items: center; }
+    input, button, select {
+      font: inherit;
+      padding: .4rem .7rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+    }
+    button {
+      cursor: pointer;
+      background: #f6f8fa;
+    }
+    button:hover { background: #eaeef2; }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.primary:hover { background: #0356b6; }
+    button.danger { color: var(--loaned); }
+    table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
+    th, td { border-bottom: 1px solid var(--border); padding: .5rem .4rem; text-align: left; vertical-align: middle; }
+    th { background: #f6f8fa; font-weight: 600; }
+    td.available { color: var(--avail); font-weight: 500; }
+    td.loaned    { color: var(--loaned); font-weight: 500; }
+    td.actions   { text-align: right; }
+    ul#history { padding-left: 1.25rem; }
+    ul#history li { margin: .15rem 0; color: var(--muted); font-size: .92rem; }
+    ul#history li b { color: var(--fg); font-weight: 600; }
+    .empty { color: var(--muted); font-style: italic; padding: .75rem .4rem; }
+    footer { margin-top: 3rem; color: var(--muted); font-size: .85rem; text-align: center; }
+  </style>
+</head>
+<body>
+
+<h1>Tool Locker — Virtual Prototype</h1>
+<p class="subtitle">Phase 1 demo. Data lives in your browser via <code>localStorage</code>.</p>
+
+<form id="addForm">
+  <input id="toolName" placeholder="Tool name (e.g. Cordless drill)" required autocomplete="off">
+  <button class="primary" type="submit">Add tool</button>
+</form>
+
+<div class="controls">
+  <label><input type="checkbox" id="onlyAvailable"> Show only available</label>
+  <button id="clearAll" class="danger" type="button">Clear all data</button>
+</div>
+
+<h2>Tools</h2>
+<table id="toolsTable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Status</th>
+      <th>Borrower</th>
+      <th class="actions">Action</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<h2>History <small style="font-weight:normal;color:var(--muted);">(most recent 20)</small></h2>
+<ul id="history"></ul>
+
+<footer>
+  Tool Locker — virtual prototype · no server · no build · offline
+</footer>
+
+<script>
+"use strict";
+
+const KEY_TOOLS = "tl.tools";
+const KEY_HIST  = "tl.history";
+
+const load = (k) => { try { return JSON.parse(localStorage.getItem(k) || "[]"); } catch { return []; } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+// Escape strings before interpolating into innerHTML so tool/borrower names
+// can safely contain characters like <, >, &, ".
+function esc(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function fmtTs(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleString();
+}
+
+function render() {
+  const tools = load(KEY_TOOLS);
+  const onlyAvail = document.getElementById("onlyAvailable").checked;
+  const tbody = document.querySelector("#toolsTable tbody");
+  tbody.innerHTML = "";
+
+  const visible = tools
+    .map((t, i) => ({ t, i }))
+    .filter(({ t }) => !onlyAvail || t.status === "Available");
+
+  if (visible.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty">${
+      tools.length === 0 ? "No tools yet. Add one above." : "No tools match the current filter."
+    }</td></tr>`;
+  } else {
+    for (const { t, i } of visible) {
+      const statusClass = t.status.toLowerCase();
+      const label = t.status === "Available" ? "Check out" : "Check in";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${esc(t.name)}</td>
+        <td class="${statusClass}">${esc(t.status)}</td>
+        <td>${esc(t.borrower || "")}</td>
+        <td class="actions"><button data-i="${i}" type="button">${label}</button></td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  const hist = load(KEY_HIST).slice(-20).reverse();
+  const histEl = document.getElementById("history");
+  if (hist.length === 0) {
+    histEl.innerHTML = `<li class="empty">No history yet.</li>`;
+  } else {
+    histEl.innerHTML = hist.map((h) =>
+      `<li>${esc(fmtTs(h.ts))} — <b>${esc(h.action)}</b>: ${esc(h.tool)}${
+        h.borrower ? ` (${esc(h.borrower)})` : ""
+      }</li>`
+    ).join("");
+  }
+}
+
+document.getElementById("addForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const input = document.getElementById("toolName");
+  const name = input.value.trim();
+  if (!name) return;
+  const tools = load(KEY_TOOLS);
+  if (tools.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+    alert(`A tool named "${name}" already exists.`);
+    return;
+  }
+  tools.push({ name, status: "Available", borrower: "" });
+  save(KEY_TOOLS, tools);
+  input.value = "";
+  render();
+});
+
+document.querySelector("#toolsTable").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-i]");
+  if (!btn) return;
+  const i = Number(btn.dataset.i);
+  const tools = load(KEY_TOOLS);
+  const t = tools[i];
+  if (!t) return;
+
+  if (t.status === "Available") {
+    const who = prompt(`Who is checking out "${t.name}"?`);
+    if (!who || !who.trim()) return;
+    t.status = "Loaned";
+    t.borrower = who.trim();
+  } else {
+    t.status = "Available";
+    t.borrower = "";
+  }
+
+  const hist = load(KEY_HIST);
+  hist.push({
+    ts: new Date().toISOString(),
+    action: t.status === "Loaned" ? "checkout" : "checkin",
+    tool: t.name,
+    borrower: t.status === "Loaned" ? t.borrower : "",
+  });
+  save(KEY_TOOLS, tools);
+  save(KEY_HIST, hist);
+  render();
+});
+
+document.getElementById("onlyAvailable").addEventListener("change", render);
+
+document.getElementById("clearAll").addEventListener("click", () => {
+  if (confirm("Wipe all tools and history? This cannot be undone.")) {
+    localStorage.removeItem(KEY_TOOLS);
+    localStorage.removeItem(KEY_HIST);
+    render();
+  }
+});
+
+// Cross-tab sync: if another tab changes data, re-render here too.
+window.addEventListener("storage", (e) => {
+  if (e.key === KEY_TOOLS || e.key === KEY_HIST) render();
+});
+
+render();
+</script>
+</body>
+</html>
