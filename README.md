@@ -4,7 +4,9 @@ A fully offline, barcode-driven smart tool locker running on a Raspberry Pi. Hea
 
 ## Status
 
-Pre-alpha. Currently in **Phase 0** of the roadmap. See [`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md) for the full plan.
+Pre-alpha. **Phase 0 complete** — repo scaffolded, tooling wired, CI green. See [`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md) for the full plan.
+
+![CI](https://github.com/manofthedown/tool-locker/actions/workflows/ci.yml/badge.svg)
 
 ## Features (target v1)
 
@@ -57,6 +59,16 @@ tool-locker/
 
 ## Quick Start
 
+### Phase 0 — local dev bootstrap
+
+```bash
+make install        # create .venv, install project + dev deps
+make install-hooks  # (optional) wire up pre-commit git hooks
+make check          # lint + typecheck + tests (same as CI)
+```
+
+See `make help` for all targets.
+
 ### Phase 1 — virtual prototype (no hardware, no backend)
 
 Open `prototype/index.html` in any browser. Single-file demo using `localStorage` to prove the concept.
@@ -64,8 +76,7 @@ Open `prototype/index.html` in any browser. Single-file demo using `localStorage
 ### Phase 2+ — backend (local dev on laptop)
 
 ```bash
-python3 -m venv .venv
-./.venv/bin/pip install -r apps/api/requirements.txt
+make install
 ./.venv/bin/alembic upgrade head
 ./.venv/bin/uvicorn apps.api.main:app --reload --port 8000
 ```
@@ -80,7 +91,7 @@ See [`DEPLOY.md`](./DEPLOY.md) (to be written in Phase 7) and Appendix E of `DEV
 
 | Phase | Goal                                         | Status  |
 |------:|----------------------------------------------|---------|
-|     0 | Setup, learning, empty repo + CI             | pending |
+|     0 | Setup, learning, empty repo + CI             | **done** |
 |     1 | Single-file HTML virtual prototype           | pending |
 |     2 | FastAPI + SQLite backend (no hardware)       | pending |
 |     3 | USB barcode scanner integration (evdev)      | pending |
@@ -93,4 +104,4 @@ See `DEVELOPMENT_PLAN.md` for full detail, code skeletons, BOM, risk register, a
 
 ## License
 
-TBD (likely MIT).
+[MIT](./LICENSE).

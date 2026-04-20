@@ -1,0 +1,120 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tool-locker"
+version = "0.0.0"
+description = "Offline, barcode-driven smart tool locker for Raspberry Pi."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "manofthedown" }]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Home Automation",
+]
+
+# Runtime deps are intentionally empty in Phase 0.
+# They will be added per-phase (e.g. Phase 2 adds fastapi, sqlalchemy, alembic).
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "black>=24.0",
+    "mypy>=1.10",
+    "pre-commit>=3.7",
+]
+
+[project.urls]
+Repository = "https://github.com/manofthedown/tool-locker"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["apps*"]
+exclude = ["tests*", "alembic*", "deploy*", "docs*", "prototype*", "web*"]
+
+# ---------------------------------------------------------------------------
+# Ruff — linter (+ import sorter). Run with `ruff check .`
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["alembic/versions", "prototype"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "N",   # pep8-naming
+]
+ignore = [
+    "E501",  # line length handled by black
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["N802", "N803"]  # allow test_ naming flexibility
+
+# ---------------------------------------------------------------------------
+# Black — formatter. Run with `black .`
+# ---------------------------------------------------------------------------
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+extend-exclude = '''
+(
+    alembic/versions
+  | prototype
+)
+'''
+
+# ---------------------------------------------------------------------------
+# Mypy — static type checker. Run with `mypy .`
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+warn_return_any = true
+warn_unreachable = true
+show_error_codes = true
+pretty = true
+exclude = [
+    "^alembic/versions/",
+    "^prototype/",
+    "^build/",
+    "^dist/",
+]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+# Tests can be a bit looser — don't require full annotations on every fixture.
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+asyncio_mode = "auto"
